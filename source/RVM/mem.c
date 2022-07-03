@@ -229,14 +229,3 @@ RASM_BOOL RASM_POP(RASM_MOV_PACK src)
 		return RASM_TRUE;
 	}
 }
-
-main()
-{
-	RASM_MOV_PACK rmp1,rmp2;
-	void *v1,*v2;
-	v1 = malloc(2);
-	v2 = malloc(1);
-	
-	printf("%s",RASM_MEM[RASM_MEM_NP]);
-	return 0;
-}

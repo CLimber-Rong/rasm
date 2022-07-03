@@ -1,0 +1,4 @@
+git add .
+git commit -m ""
+git remote add origin https://gitee.com/QuXiangrong/rasm.git
+git push -u origin "master"
