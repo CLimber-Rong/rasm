@@ -1,0 +1,5 @@
+= test.c
+= test.h
+# gcc test.c -o test.exe
+= test.exe
+# start test.exe
