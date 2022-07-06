@@ -53,7 +53,7 @@ temporary
 
 因为MAKEFILE的协议和操作复杂的原因，我还写了一个轻量级的MAKEFILE，源文件在source/RMAKE里
 
-我会将源码第一时间同步更新到github上，第二时间同步更新到csdn上，第三时间同步更新到学而思社区上，所以想要获得最新的动态，请关注github
+我会将源码第一时间同步更新到github和gitee上，第二时间同步更新到csdn上，第三时间同步更新到学而思社区上，所以想要获得最新的动态，请关注github或gitee
 
 LICENSE是协议文件、UPDATE-LOG是更新日志文件、WORK-DIARY.nonsense是充满废话的吐槽和最近的一些状态，backup放着没用的备份代码，你完全可以把他删去
 
