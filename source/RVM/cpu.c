@@ -37,7 +37,7 @@ RASM_BOOL RASM_ADD(RASM_MOV_PACK src,RASM_MOV_PACK dst)
 		if(*(RASM_uWORD*)(dst.val)<RASM_REG_SIZE)	return RASM_FALSE;
 		if(*(RASM_uWORD*)(dst.val)<RASM_REG_LH_SIZE){
 			//low-high level
-			if(*(RASM_uWORD*)(dst.val)%2){
+			if(*(RASM_uWORD*)(dst.val)%2==0){
 				//low level
 				addn = (RASM_BYTE)(RASM_REG[*(RASM_uWORD*)(dst.val)/2]);
 			}else{
@@ -46,7 +46,6 @@ RASM_BOOL RASM_ADD(RASM_MOV_PACK src,RASM_MOV_PACK dst)
 			}
 		}else{
 			//a reg
-			
 			addn = (RASM_WORD)(RASM_REG[*(RASM_uWORD*)(dst.val)]);
 		}
 	}else
@@ -55,6 +54,46 @@ RASM_BOOL RASM_ADD(RASM_MOV_PACK src,RASM_MOV_PACK dst)
 	}
 	//NOW I WIIL LET SRC+=ADDN
 	//DONT FORGET CARRY-FLAG
+	//I'M SO TIERD SO I WANT TO HAVE A LITTLE REST...
 	
+	//HAVING REST...
 	
+	//OK GUYS I HAVE A TWO-DAY REST,AND LET'S GO!
+	if(src.type!=RASM_MPT_REG)	return RASM_FALSE;
+	//ONLY REG+=REG OR REG+=NUM
+	if(*(RASM_uWORD*)(src.val)<RASM_REG_LH_SIZE){
+		//LOW-HIGH LEVEL
+		if(*(RASM_uWORD*)(src.val)%2==0){
+			//LOW LEVEL
+			RASM_WORD tmp;
+			tmp = (RASM_BYTE)RASM_REG[*(RASM_uWORD*)(src.val)/2];
+			tmp += (RASM_BYTE)(addn);
+			printf("%x ",tmp);
+			RASM_REG[RASM_CF] = (RASM_WORD)((RASM_uWORD)tmp>>8);	
+			tmp = (RASM_BYTE)tmp;
+			tmp += RASM_REG[*(RASM_uWORD*)(src.val)/2] - (RASM_BYTE)RASM_REG[*(RASM_uWORD*)(src.val)];
+			RASM_REG[*(RASM_uWORD*)(src.val)/2] = tmp;
+		}
+	}
+}
+
+//TEST MAIN
+main()
+{
+	RASM_MOV_PACK src,dst;
+	void* v1 = malloc(2);
+	void* v2 = malloc(2);
+	*(RASM_uWORD*)v1 = RASM_AL;
+	*(RASM_WORD*)v2  = (RASM_BYTE)(-1);
+	RASM_MOV_PACK_SET(&src,RASM_MPT_REG,v1);
+	RASM_MOV_PACK_SET(&dst,RASM_MPT_NUM,v2);
+	RASM_ADD(src,dst);
+	
+	*(RASM_uWORD*)v1 = 	RASM_AL;
+	*(RASM_WORD*)v2  = (RASM_BYTE)(1);
+	RASM_MOV_PACK_SET(&src,RASM_MPT_REG,v1);
+	RASM_MOV_PACK_SET(&dst,RASM_MPT_NUM,v2);
+	RASM_ADD(src,dst);
+	printf("%d",RASM_REG[RASM_CF]);
+	return 0;
 }

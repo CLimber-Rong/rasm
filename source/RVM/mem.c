@@ -229,3 +229,4 @@ RASM_BOOL RASM_POP(RASM_MOV_PACK src)
 		return RASM_TRUE;
 	}
 }
+
