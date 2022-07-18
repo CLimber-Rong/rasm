@@ -5,11 +5,12 @@
 	Date: 07/07/22 14:25
 	Description: Write CPU here
 */
+#include"stdio.h"
 
 #include"mem.c"
 
 /*Arithmetic operation section*/
-RASM_BOOL RASM_ADD(RASM_MOV_PACK,RASM_MOV_PACK);
+RASM_BOOL RASM_ADD(RASM_MOV_PACK,RASM_MOV_PACK);		//COMPLETE - 22/7/18
 RASM_BOOL RASM_SUB(RASM_MOV_PACK,RASM_MOV_PACK);
 RASM_BOOL RASM_MUL(RASM_MOV_PACK,RASM_MOV_PACK);
 RASM_BOOL RASM_DIV(RASM_MOV_PACK,RASM_MOV_PACK);
@@ -34,7 +35,7 @@ RASM_BOOL RASM_ADD(RASM_MOV_PACK src,RASM_MOV_PACK dst)
 	//THEN LET SRC+=ADDN
 	//I'M SO CLEVER :-)
 	if(dst.type==RASM_MPT_REG){
-		if(*(RASM_uWORD*)(dst.val)<RASM_REG_SIZE)	return RASM_FALSE;
+		if(*(RASM_uWORD*)(dst.val)>=RASM_REG_LH_SIZE+RASM_REG_SIZE)	return RASM_FALSE;
 		if(*(RASM_uWORD*)(dst.val)<RASM_REG_LH_SIZE){
 			//low-high level
 			if(*(RASM_uWORD*)(dst.val)%2==0){
@@ -46,7 +47,7 @@ RASM_BOOL RASM_ADD(RASM_MOV_PACK src,RASM_MOV_PACK dst)
 			}
 		}else{
 			//a reg
-			addn = (RASM_WORD)(RASM_REG[*(RASM_uWORD*)(dst.val)]);
+			addn = (RASM_WORD)(RASM_REG[*(RASM_uWORD*)(dst.val)-RASM_REG_LH_SIZE]);
 		}
 	}else
 	if(dst.type==RASM_MPT_NUM){
@@ -60,40 +61,133 @@ RASM_BOOL RASM_ADD(RASM_MOV_PACK src,RASM_MOV_PACK dst)
 	
 	//OK GUYS I HAVE A TWO-DAY REST,AND LET'S GO!
 	if(src.type!=RASM_MPT_REG)	return RASM_FALSE;
+	if(*(RASM_uWORD*)(src.val)>=(RASM_REG_LH_SIZE+RASM_REG_SIZE))	return RASM_FALSE;
 	//ONLY REG+=REG OR REG+=NUM
 	if(*(RASM_uWORD*)(src.val)<RASM_REG_LH_SIZE){
 		//LOW-HIGH LEVEL
 		if(*(RASM_uWORD*)(src.val)%2==0){
 			//LOW LEVEL
-			RASM_WORD tmp;
-			tmp = (RASM_BYTE)RASM_REG[*(RASM_uWORD*)(src.val)/2];
-			tmp += (RASM_BYTE)(addn);
-			printf("%x ",tmp);
-			RASM_REG[RASM_CF] = (RASM_WORD)((RASM_uWORD)tmp>>8);	
-			tmp = (RASM_BYTE)tmp;
-			tmp += RASM_REG[*(RASM_uWORD*)(src.val)/2] - (RASM_BYTE)RASM_REG[*(RASM_uWORD*)(src.val)];
-			RASM_REG[*(RASM_uWORD*)(src.val)/2] = tmp;
+			/*
+			 * GET LOW-LEVEL TO TMP
+			 * ADD NUM TO TMP
+			 * COUNT CARRY-FLAG
+			 * MOV LOW-LEVEL TMP
+			*/
+			RASM_WORD tmp = 0;
+			/*I'M SO STUPID
+			 * 0X00FF & REG = REG'S LOW-LEVEL
+			 * 0XFF00 & REG = REG'S HIGH-LEVEL
+			 * AHHHHHHHHHH,I FORGOT IT!!
+			 * OK LET IT PASS
+			 * OPTIMIZE IT TOGETHER NEXT TIME......
+			*/
+			//GET LOW-LEVEL TO TMP
+			tmp += RASM_REG[*(RASM_uWORD*)(src.val)] & 0x00ff;
+			//ADD NUM TO TMP
+			tmp += addn & 0x00ff;
+			//COUNT CARRY-FLAG
+			RASM_REG[RASM_CF] = ((RASM_uWORD)tmp)>>8;
+			//MOV LOW-LEVEL TMP
+			RASM_REG[*(RASM_uWORD*)(src.val)/2] = (RASM_REG[*(RASM_uWORD*)(src.val)/2] & 0xff00) + (tmp & 0x00ff);
+			//RETURN TRUE
+			return RASM_TRUE;
+		}else{
+			//HIGH-LEVEL
+			RASM_WORD tmp = 0;
+			//GET HIGH-LEVEL TO TMP
+			tmp += (RASM_uWORD)(RASM_REG[*(RASM_uWORD*)(src.val)/2] & 0xff00)>>8;
+			//ADD NUM TO TMP
+			tmp += addn & 0x00ff;
+			//COUNT CARRY-FLAG
+			RASM_REG[RASM_CF] = ((RASM_uWORD)tmp)>>8;
+			//MOV HIGH-LEVEL TMP
+			RASM_REG[*(RASM_uWORD*)(src.val)/2] = (RASM_REG[*(RASM_uWORD*)(src.val)/2] & 0x00ff) + ((tmp & 0x00ff)<<8);
+			//RETURN TRUE
+			return RASM_TRUE;
+			/*OHHH! IN FINALLY I COMPLETE IT!!*/
 		}
+	}else{
+		//WHOLE REG
+		/*
+		 * MOV REG TO TMP
+		 * ADD NUM TO TMP
+		 * COUNT CARRY-FLAG
+		 * MOV REG TMP
+		*/
+		RASM_DWORD tmp = 0;
+		//MOV REG TO TMP
+		tmp += (RASM_REG[*(RASM_uWORD*)(src.val)-RASM_REG_LH_SIZE] & 0xffff);
+		//ADD NUM TO TMP
+		tmp += (addn & 0xffff);
+		//COUNT CARRY-FLAG
+		RASM_REG[RASM_CF] = (RASM_WORD)(tmp>>16);
+		//MOV REG TMP
+		RASM_REG[*(RASM_uWORD*)(src.val)-RASM_REG_LH_SIZE] = (RASM_WORD)tmp; 
+		//RETURN TRUE;
+		return RASM_TRUE;
 	}
+	//OHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
+	//I DONE IT!!!
+	//(EXCITED)
 }
 
-//TEST MAIN
-main()
-{
-	RASM_MOV_PACK src,dst;
-	void* v1 = malloc(2);
-	void* v2 = malloc(2);
-	*(RASM_uWORD*)v1 = RASM_AL;
-	*(RASM_WORD*)v2  = (RASM_BYTE)(-1);
-	RASM_MOV_PACK_SET(&src,RASM_MPT_REG,v1);
-	RASM_MOV_PACK_SET(&dst,RASM_MPT_NUM,v2);
-	RASM_ADD(src,dst);
-	
-	*(RASM_uWORD*)v1 = 	RASM_AL;
-	*(RASM_WORD*)v2  = (RASM_BYTE)(1);
-	RASM_MOV_PACK_SET(&src,RASM_MPT_REG,v1);
-	RASM_MOV_PACK_SET(&dst,RASM_MPT_NUM,v2);
-	RASM_ADD(src,dst);
-	printf("%d",RASM_REG[RASM_CF]);
-	return 0;
-}
+////TEST MAIN
+//main()
+//{
+//	/*
+//	 * MAKE A LITTLE PROGRAM
+//	 
+//	MOV AH, 0XF0
+//	MOV AL, 0X02
+//	MOV EAX,AX
+//	MOV AH, 0X0F
+//	MOV AL, 0XFF
+//	ADD AX, EAX
+//	*/
+//	//INIT
+//	RASM_MOV_PACK src,dst;
+//	void *v1,*v2;
+//	v1 = malloc(2);
+//	v2 = malloc(2);
+//	//MOV AH, 0XF0
+//	*(RASM_uWORD*)v1 = RASM_AH;
+//	*(RASM_WORD*)v2 = 0xf0;
+//	RASM_MOV_PACK_SET(&src,RASM_MPT_REG,v1);
+//	RASM_MOV_PACK_SET(&dst,RASM_MPT_NUM,v2);
+//	RASM_MOV(src,dst);
+//	//MOV AL, 0X02
+//	*(RASM_uWORD*)v1 = RASM_AL;
+//	*(RASM_WORD*)v2 = 0x02;
+//	RASM_MOV_PACK_SET(&src,RASM_MPT_REG,v1);
+//	RASM_MOV_PACK_SET(&dst,RASM_MPT_NUM,v2);
+//	RASM_MOV(src,dst);
+//	//MOV EAX,AX
+//	*(RASM_uWORD*)v1 = RASM_REG_LH_SIZE+RASM_EAX;
+//	*(RASM_uWORD*)v2 = RASM_REG_LH_SIZE+RASM_AX;
+//	RASM_MOV_PACK_SET(&src,RASM_MPT_REG,v1);
+//	RASM_MOV_PACK_SET(&dst,RASM_MPT_REG,v2);
+//	RASM_MOV(src,dst);
+//	//MOV AH, 0X0F
+//	*(RASM_uWORD*)v1 = RASM_AH;
+//	*(RASM_WORD*)v2 = 0x0f;
+//	RASM_MOV_PACK_SET(&src,RASM_MPT_REG,v1);
+//	RASM_MOV_PACK_SET(&dst,RASM_MPT_NUM,v2);
+//	RASM_MOV(src,dst);
+//	//MOV AL, 0XFF
+//	*(RASM_uWORD*)v1 = RASM_AL;
+//	*(RASM_WORD*)v2 = 0xff;
+//	RASM_MOV_PACK_SET(&src,RASM_MPT_REG,v1);
+//	RASM_MOV_PACK_SET(&dst,RASM_MPT_NUM,v2);
+//	RASM_MOV(src,dst);
+//	printf("AX=%x\n",(RASM_uWORD)RASM_REG[RASM_AX]);
+//	printf("EAX=%x\n",(RASM_uWORD)RASM_REG[RASM_EAX]);
+//	//ADD AX,EAX
+//	*(RASM_uWORD*)v1 = RASM_REG_LH_SIZE+RASM_AX;
+//	*(RASM_uWORD*)v2 = RASM_REG_LH_SIZE+RASM_EAX;
+//	RASM_MOV_PACK_SET(&src,RASM_MPT_REG,v1);
+//	RASM_MOV_PACK_SET(&dst,RASM_MPT_REG,v2);
+//	RASM_ADD(src,dst);
+//	printf("EAX+AX=%x\n",RASM_REG[RASM_AX]);
+//	printf("CF=%x\n",RASM_REG[RASM_CF]);
+//	return 0;
+//}

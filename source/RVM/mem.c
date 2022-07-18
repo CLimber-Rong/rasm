@@ -1,7 +1,7 @@
 /*
  * Write register and memory here
 */
-#include"stdio.h"
+//#include"stdio.h"
 
 #include"macro.c"
 #include"custom.c"
@@ -55,7 +55,7 @@ RASM_uDWORD RASM_LP;												//label point
 RASM_uDWORD RASM_MEM_NP = 0;										//now partition
 
 RASM_BOOL  RASM_MOV_PACK_SET(RASM_MOV_PACK*,int,void*);
-RASM_BOOL  RASM_INTO(RASM_uWORD);
+RASM_BOOL  RASM_INTO(RASM_MOV_PACK);
 RASM_BOOL  RASM_MOV(RASM_MOV_PACK,RASM_MOV_PACK);
 RASM_BOOL  RASM_MOVL(RASM_MOV_PACK);
 RASM_BOOL  RASM_DB(RASM_MOV_PACK,RASM_MOV_PACK);
@@ -74,14 +74,22 @@ RASM_BOOL RASM_MOV_PACK_SET(RASM_MOV_PACK* src,int type,void* val)
 	return RASM_FALSE;
 }
 
-RASM_BOOL RASM_INTO(RASM_uWORD part)
+RASM_BOOL RASM_INTO(RASM_MOV_PACK src)
 {
+	RASM_uWORD part = 0;
+	if(src.type==RASM_MPT_NUM){
+		part = (RASM_uWORD)*(RASM_uWORD*)(src.val);
+	}else if(src.type==RASM_MPT_REG&&*(RASM_uWORD*)(src.val)>=RASM_REG_LH_SIZE&&*(RASM_uWORD*)(src.val)<RASM_REG_SIZE){
+		part = (RASM_uWORD)RASM_REG[*(RASM_uWORD*)(src.val)-RASM_REG_LH_SIZE];
+	}else{
+		return RASM_FALSE;
+	}
 	if(part>RASM_USER_MEM_PARTITION){
 		return RASM_FALSE;
 		//I FEEL SO TIRED WHEN I WRITE HERE
 		//NUT I KNOW, I WILL BE THE WINNER!
 	}else{
-		RASM_MEM_NP = part;
+		RASM_MEM_NP = (RASM_uDWORD)part;
 		return RASM_TRUE;
 	}
 	return RASM_FALSE;	//I DONT KNOW WHY I NEED TO RETURN HERE....:-)
@@ -99,7 +107,7 @@ RASM_BOOL RASM_MOV(RASM_MOV_PACK src,RASM_MOV_PACK dst)
 	/**/
 	if(src.type==0){
 		if(dst.type==1){
-			if(*(RASM_uWORD*)(dst.val)<=RASM_DX*2){
+			if(*(RASM_uWORD*)(dst.val)<RASM_REG_LH_SIZE){
 				if(*(RASM_uWORD*)(dst.val)%2==1)
 					RASM_MEM[RASM_MEM_NP][*(RASM_uWORD*)(src.val)] = (RASM_BYTE)(RASM_REG[*(RASM_uWORD*)(dst.val)/2]>>8);
 				else
@@ -139,22 +147,23 @@ RASM_BOOL RASM_MOV(RASM_MOV_PACK src,RASM_MOV_PACK dst)
 			}
 		}else
 		if(dst.type==2){
-			if(*(RASM_uWORD*)(src.val)<=RASM_DX*2){
+			if(*(RASM_uWORD*)(src.val)<RASM_REG_LH_SIZE){
 				if(*(RASM_uWORD*)(src.val)%2==1){
 					RASM_WORD tmp = *(RASM_BYTE*)(dst.val);
 					tmp = tmp<<8;
 					/*tmp = tmp<<8;
 					tmp+=(RASM_BYTE)RASM_REG[*(RASM_uWORD*)(src.val)];
 					RASM_REG[*(RASM_uWORD*)(src.val)] = tmp;*/
-					RASM_WORD tmp2 = RASM_REG[*(RASM_uWORD*)(src.val)];
+					RASM_WORD tmp2 = RASM_REG[*(RASM_uWORD*)(src.val)/2];
 					tmp2 = tmp2<<8;
 					tmp2 = tmp2>>8;
 					RASM_REG[*(RASM_uWORD*)(src.val)/2] = tmp + tmp2;
 				}else{
-					RASM_WORD tmp = RASM_REG[*(RASM_uWORD*)(src.val)];
+					RASM_WORD tmp = RASM_REG[*(RASM_uWORD*)(src.val)/2];
 					tmp = tmp>>8;
 					tmp = tmp<<8;
-					tmp+= *(RASM_BYTE*)(dst.val);
+					//I CAME BACK FOR DEBUG!
+					tmp += (*(RASM_uWORD*)(dst.val) & 0x00ff);
 					RASM_REG[*(RASM_uWORD*)(src.val)/2] = tmp;
 				}
 			}else{
@@ -229,4 +238,3 @@ RASM_BOOL RASM_POP(RASM_MOV_PACK src)
 		return RASM_TRUE;
 	}
 }
-
