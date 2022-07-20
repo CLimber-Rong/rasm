@@ -1,8 +1,0 @@
-= test.c
-= test.h
-- %::NT::%
-> gcc test.c -o test.exe
-= test.exe
-> start test.exe
-- %::POSIX::%
-> printf("Sorry this is nt makefile...")
